@@ -2,7 +2,7 @@ use super::svg::{src, Svg};
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct MessageProps {
     avatar: Option<String>,
     name: String,
@@ -46,32 +46,33 @@ pub fn message(props: &MessageProps) -> Html {
     }
 }
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct InputProps {
     onsend: Callback<String>,
 }
 
 #[function_component(Input)]
 pub fn input(props: &InputProps) -> Html {
-    use web_sys::{Element, HtmlTextAreaElement, InputEvent, KeyboardEvent};
-
     let node = NodeRef::default();
     let send = {
         let node = node.clone();
         let onsend = props.onsend.clone();
         move || {
-            let text: HtmlTextAreaElement = node.cast().unwrap_throw();
+            let text: web_sys::HtmlTextAreaElement = node.cast().expect_throw("cast");
             onsend.emit(text.value());
             text.set_value("");
-            text.set_attribute("style", "").unwrap_throw();
+            text.set_attribute("style", "")
+                .expect_throw("set attribute");
         }
     };
 
     let oninput = Callback::from(|ev: InputEvent| {
-        let element: Element = ev.target_dyn_into().unwrap_throw();
+        let element: web_sys::Element = ev.target_dyn_into().expect_throw("target");
         let height = element.scroll_height();
         let height = format!("height: {}px", height.min(200));
-        element.set_attribute("style", &height).unwrap_throw();
+        element
+            .set_attribute("style", &height)
+            .expect_throw("set attribute");
     });
 
     let onkeypress = Callback::from({
@@ -111,7 +112,7 @@ struct MessageData {
     rows: Vec<String>,
 }
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     pub onsend: Callback<String>,
 }
@@ -127,7 +128,7 @@ impl Chat {
         if self.scroll_to_end {
             let height = gloo::utils::document()
                 .body()
-                .unwrap_throw()
+                .expect_throw("body")
                 .scroll_height();
 
             gloo::utils::window().scroll_by_with_x_and_y(0., height as f64);

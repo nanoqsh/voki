@@ -18,7 +18,7 @@ pub enum Action {
     Send(String),
 }
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     pub onaction: Callback<Action>,
 }

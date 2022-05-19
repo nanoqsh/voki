@@ -1,7 +1,7 @@
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     pub content: String,
 }
@@ -10,7 +10,7 @@ pub struct Props {
 pub fn raw(props: &Props) -> Html {
     let element = gloo::utils::document()
         .create_element("empty")
-        .unwrap_throw();
+        .expect_throw("create element");
 
     element.set_inner_html(&props.content);
     let children = element.children();
@@ -19,6 +19,6 @@ pub fn raw(props: &Props) -> Html {
         panic!("wrong content")
     }
 
-    let child = children.item(0).unwrap_throw();
+    let child = children.item(0).expect_throw("item");
     Html::VRef(child.into())
 }

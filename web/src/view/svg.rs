@@ -9,7 +9,7 @@ macro_rules! src {
 
 pub(super) use src;
 
-#[derive(Properties, PartialEq)]
+#[derive(PartialEq, Properties)]
 pub struct Props {
     pub content: &'static str,
 }

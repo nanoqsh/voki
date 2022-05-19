@@ -4,11 +4,14 @@ use self::view::{App, Message, Props};
 use wasm_bindgen::prelude::*;
 use yew::AppHandle;
 
-struct State {
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+struct View {
     app: AppHandle<App>,
 }
 
-impl State {
+impl View {
     fn received(&self, from: String, text: String) {
         self.app.send_message(Message::Received { from, text });
     }
@@ -20,7 +23,7 @@ pub fn main() -> Result<(), JsValue> {
 
     let root = gloo::utils::document()
         .get_element_by_id("root")
-        .unwrap_throw();
+        .expect_throw("root");
 
     let app = yew::start_app_with_props_in_element::<App>(
         root,
@@ -29,8 +32,8 @@ pub fn main() -> Result<(), JsValue> {
         },
     );
 
-    let state = State { app };
-    state.received("nano".into(), "hi".into());
+    let view = View { app };
+    view.received("nano".into(), "hi".into());
 
     Ok(())
 }
