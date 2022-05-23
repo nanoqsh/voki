@@ -73,6 +73,7 @@ async fn connect(stream: TcpStream, sender: Sender<Event>) -> Result<(), ws::Err
                             from: addr,
                             what: What::BytesReceived(bytes),
                         };
+
                         if sender.send(event).await.is_err() {
                             return Ok(());
                         }
