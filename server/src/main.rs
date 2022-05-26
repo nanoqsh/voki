@@ -1,3 +1,6 @@
+mod args;
+
+use self::args::Args;
 use std::net::SocketAddr;
 use tokio::{
     net::{TcpListener, TcpStream, ToSocketAddrs},
@@ -17,15 +20,21 @@ pub struct Event {
 
 #[tokio::main]
 async fn main() {
+    use clap::Parser;
+
+    let args = Args::parse();
+
     let (sender, _receiver) = mpsc::channel(16);
-    run("127.0.0.1:4567", sender).await.expect("run");
+    run(args.address(), sender).await;
 }
 
-async fn run<A>(addr: A, sender: Sender<Event>) -> Result<(), std::io::Error>
+async fn run<A>(addr: A, sender: Sender<Event>) -> !
 where
     A: ToSocketAddrs,
 {
-    let listener = TcpListener::bind(addr).await?;
+    let listener = TcpListener::bind(addr).await.expect("bind");
+    let local_addr = listener.local_addr().expect("should have a local adders");
+    println!("listening at {local_addr}");
 
     loop {
         match listener.accept().await {
