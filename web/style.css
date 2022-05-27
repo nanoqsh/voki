@@ -4,6 +4,7 @@
     --bg1: #48393e;
     --dark: #120c0f;
     --light: #f7eee9;
+    --light1: #c5b3a9;
     --message: #614c51;
     --message_hover: #785b5f;
 
@@ -58,6 +59,40 @@ textarea {
     background: var(--bg0);
 }
 
+.channels>div {
+    position: fixed;
+    top: 0;
+}
+
+.channel {
+    width: calc(var(--app_width) * 0.2);
+    height: fit-content;
+    padding: var(--pad);
+    display: flex;
+    flex-direction: row;
+    cursor: pointer;
+}
+
+.channel:hover {
+    background: var(--bg1);
+}
+
+.channel .name {
+    font-weight: bold;
+}
+
+.channel .last {
+    color: var(--light1);
+}
+
+.channel>div {
+    padding: var(--pad_half) 0;
+}
+
+.current {
+    background: var(--bg1);
+}
+
 .chat {
     width: 80%;
     min-height: 100vh;
@@ -71,7 +106,7 @@ textarea {
     flex-direction: row;
 }
 
-.message .avatar {
+.avatar {
     width: 50px;
     height: 50px;
     margin-right: var(--pad);

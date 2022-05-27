@@ -96,7 +96,7 @@ pub fn input(props: &InputProps) -> Html {
                 <Svg content={ src!("/icons/send.svg") } />
             </div>
             <div class="button" { onclick }>
-                <Svg content={ src!("/icons/send.svg") } />
+                <Svg content={ src!("/icons/attach.svg") } />
             </div>
         </div>
     }
