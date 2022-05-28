@@ -1,12 +1,17 @@
-use super::svg::{src, Svg};
+use crate::view::{
+    svg::{src, Svg},
+    Data,
+};
+use im::Vector;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;
 
 #[derive(PartialEq, Properties)]
 pub struct MessageProps {
-    avatar: Option<String>,
-    name: String,
-    rows: Vec<String>,
+    avatar: Option<Rc<str>>,
+    name: Rc<str>,
+    rows: Vector<Rc<str>>,
 }
 
 #[function_component(Message)]
@@ -16,7 +21,7 @@ pub fn message(props: &MessageProps) -> Html {
             {
                 match &props.avatar {
                     Some(image) => html! {
-                        <img class="avatar" src={ image.clone() } />
+                        <img class="avatar" src={ image.to_string() } />
                     },
                     None => html! {
                         <div class="avatar"/>
@@ -48,7 +53,7 @@ pub fn message(props: &MessageProps) -> Html {
 
 #[derive(PartialEq, Properties)]
 pub struct InputProps {
-    onsend: Callback<String>,
+    onsend: Callback<Rc<str>>,
 }
 
 #[function_component(Input)]
@@ -59,7 +64,7 @@ pub fn input(props: &InputProps) -> Html {
         let onsend = props.onsend.clone();
         move || {
             let text: web_sys::HtmlTextAreaElement = node.cast().expect_throw("cast");
-            onsend.emit(text.value());
+            onsend.emit(text.value().into());
             text.set_value("");
             text.set_attribute("style", "")
                 .expect_throw("set attribute");
@@ -103,23 +108,15 @@ pub fn input(props: &InputProps) -> Html {
 }
 
 pub enum Event {
-    Send { from: String, text: String },
-}
-
-struct MessageData {
-    avatar: Option<String>,
-    name: String,
-    rows: Vec<String>,
+    Send { channel: u32, text: Rc<str> },
 }
 
 #[derive(PartialEq, Properties)]
 pub struct Props {
-    pub onsend: Callback<String>,
+    pub onsend: Callback<(u32, Rc<str>)>,
 }
 
 pub struct Chat {
-    me: String,
-    messages: Vec<MessageData>,
     scroll_to_end: bool,
 }
 
@@ -144,59 +141,14 @@ impl Component for Chat {
 
     fn create(_: &Context<Self>) -> Self {
         Self {
-            me: "Claire".into(),
-            messages: vec![
-                MessageData {
-                    avatar: Some("./images/1.jpg".into()),
-                    name: "Claire".into(),
-                    rows: vec!["hi!".into(), "sup?".into(), "lol".into(), "kek".into()],
-                },
-                MessageData {
-                    avatar: None,
-                    name: "Claire".into(),
-                    rows: vec!["hi!".into(), "suck".into()],
-                },
-                MessageData {
-                    avatar: Some("./images/1.jpg".into()),
-                    name: "Claire".into(),
-                    rows: vec!["I ❤️ you".into()],
-                },
-                MessageData {
-                    avatar: Some("./images/1.jpg".into()),
-                    name: "Claire".into(),
-                    rows: vec!["I ❤️ you".into()],
-                },
-                MessageData {
-                    avatar: Some("./images/1.jpg".into()),
-                    name: "Claire_".into(),
-                    rows: vec![
-                        "0".into(),
-                        "1".into(),
-                        "2".into(),
-                        "3".into(),
-                        "4".into(),
-                        "5".into(),
-                        "6".into(),
-                    ],
-                },
-            ],
-            scroll_to_end: false,
+            scroll_to_end: true,
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Event::Send { from, text } if !text.trim().is_empty() => {
-                match self.messages.last_mut() {
-                    Some(last) if last.name == from => last.rows.push(text.clone()),
-                    _ => self.messages.push(MessageData {
-                        avatar: Some("./images/1.jpg".into()),
-                        name: self.me.clone(),
-                        rows: vec![text.clone()],
-                    }),
-                }
-
-                ctx.props().onsend.emit(text);
+            Event::Send { channel, text } if !text.trim().is_empty() => {
+                ctx.props().onsend.emit((channel, text));
                 self.scroll_to_end = true;
             }
             _ => {}
@@ -206,24 +158,27 @@ impl Component for Chat {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let onsend = ctx.link().callback({
-            let me = self.me.clone();
-            move |text| Event::Send {
-                from: me.clone(),
-                text,
-            }
-        });
+        let (data, _): (Data, _) = ctx.link().context(Callback::noop()).expect("context");
+
+        let channel = data.current_channel;
+        let onsend = ctx
+            .link()
+            .callback(move |text| Event::Send { channel, text });
 
         html! {
             <div class="chat">
                 <div class="messages">
                     {
-                        for self.messages.iter().map(|MessageData { avatar, name, rows }| html! {
-                            <Message
-                                avatar={ avatar.clone() }
-                                name={ name.clone() }
-                                rows={ rows.clone() }
-                            />
+                        for data.state.messages(data.current_channel).into_iter().map(|(from, messages)| {
+                            let user = data.state.user(from).cloned().unwrap_or_default();
+
+                            html! {
+                                <Message
+                                    avatar={ user.avatar }
+                                    name={ user.name }
+                                    rows={ messages.clone() }
+                                />
+                            }
                         })
                     }
                 </div>

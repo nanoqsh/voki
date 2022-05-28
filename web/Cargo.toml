@@ -9,10 +9,11 @@ crate-type = ["cdylib"]
 [dependencies]
 base = { path = "../base" }
 gloo = "0.7"
-wasm-bindgen = "0.2"
-yew = "0.19"
 im = { package = "im-rc", version = "15.1.0" }
+itertools = "0.10"
+wasm-bindgen = "0.2"
 wee_alloc = "0.4"
+yew = "0.19"
 
 [dependencies.web-sys]
 version = "0.3"

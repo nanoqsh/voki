@@ -2,6 +2,7 @@ use crate::{
     state::State,
     view::{channels::Channels, chat::Chat},
 };
+use std::rc::Rc;
 use yew::prelude::*;
 
 #[derive(Clone, PartialEq)]
@@ -13,10 +14,11 @@ pub struct Data {
 
 pub enum Event {
     Received { from: String, text: String },
+    ChannelSelected(u32),
 }
 
 pub enum Action {
-    Send(String),
+    Send { channel: u32, text: Rc<str> },
 }
 
 #[derive(PartialEq, Properties)]
@@ -25,36 +27,44 @@ pub struct Props {
     pub onaction: Callback<Action>,
 }
 
-pub struct App;
+pub struct App {
+    data: Data,
+}
 
 impl Component for App {
     type Message = Event;
     type Properties = Props;
 
-    fn create(_: &Context<Self>) -> Self {
-        Self
+    fn create(ctx: &Context<Self>) -> Self {
+        Self {
+            data: ctx.props().data.clone(),
+        }
     }
 
     fn update(&mut self, _: &Context<Self>, message: Self::Message) -> bool {
         match message {
-            Event::Received { .. } => {}
+            Event::Received { .. } => false,
+            Event::ChannelSelected(index) => {
+                self.data.current_channel = index;
+                true
+            }
         }
-
-        false
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let context = ctx.props().data.clone();
+        let context = self.data.clone();
+
+        let onselect = ctx.link().callback(Event::ChannelSelected);
 
         let onsend = Callback::from({
             let onaction = ctx.props().onaction.clone();
-            move |text| onaction.emit(Action::Send(text))
+            move |(channel, text)| onaction.emit(Action::Send { channel, text })
         });
 
         html! {
             <div class="app">
                 <ContextProvider<Data> { context }>
-                    <Channels />
+                    <Channels { onselect } />
                     <Chat { onsend } />
                 </ContextProvider<Data>>
             </div>

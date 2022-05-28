@@ -131,7 +131,7 @@ textarea {
     padding: 6px 12px;
     background: var(--message);
     user-select: text;
-    word-break: break-all;
+    word-break: keep-all;
     overflow-wrap: break-word;
 }
 

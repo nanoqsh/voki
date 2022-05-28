@@ -1,15 +1,16 @@
 use im::{HashMap, Vector};
+use std::{fmt, rc::Rc};
 
 #[derive(Clone, PartialEq)]
 pub struct Message {
-    from: u32,
-    text: Box<str>,
+    pub from: u32,
+    pub text: Rc<str>,
 }
 
 #[derive(Clone)]
 pub struct Channel {
-    name: Box<str>,
-    icon: Option<Box<str>>,
+    name: Rc<str>,
+    icon: Option<Rc<str>>,
     messages: Vector<Message>,
 }
 
@@ -27,11 +28,42 @@ impl Channel {
     }
 
     pub fn icon(&self) -> Option<&str> {
-        self.icon.as_ref().map(Box::as_ref)
+        self.icon.as_ref().map(Rc::as_ref)
     }
 
-    pub fn messages(&self) -> impl Iterator<Item = &Message> {
-        self.messages.iter()
+    pub fn last_message(&self) -> LastMessage {
+        self.messages
+            .last()
+            .map(|message| message.text.as_ref())
+            .unwrap_or_default()
+            .into()
+    }
+}
+
+pub struct LastMessage<'a>(&'a str);
+
+impl LastMessage<'_> {
+    const LEN: usize = 14;
+}
+
+impl fmt::Display for LastMessage<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0.chars().count() {
+            0 => Ok(()),
+            Self::LEN => write!(f, "{} ..", self.0),
+            _ => write!(f, "{}", self.0),
+        }
+    }
+}
+
+impl<'a> From<&'a str> for LastMessage<'a> {
+    fn from(text: &'a str) -> Self {
+        if text.trim().is_empty() {
+            Self("")
+        } else {
+            let len = text.chars().take(Self::LEN).map(char::len_utf8).sum();
+            Self(&text[..len])
+        }
     }
 }
 
@@ -55,8 +87,17 @@ impl PartialEq for Channel {
 
 #[derive(Clone, PartialEq)]
 pub struct User {
-    name: Box<str>,
-    avatar: Option<Box<str>>,
+    pub name: Rc<str>,
+    pub avatar: Option<Rc<str>>,
+}
+
+impl Default for User {
+    fn default() -> Self {
+        Self {
+            name: "unknown".into(),
+            avatar: None,
+        }
+    }
 }
 
 #[derive(Clone, Default, PartialEq)]
@@ -70,13 +111,39 @@ impl State {
         self.channels.iter()
     }
 
+    pub fn messages(&self, channel: u32) -> Vector<(u32, Vector<Rc<str>>)> {
+        use itertools::Itertools;
+
+        self.channels
+            .get(channel as usize)
+            .map(|channel| {
+                channel
+                    .messages
+                    .iter()
+                    .group_by(|message| message.from)
+                    .into_iter()
+                    .map(|(from, messages)| {
+                        (
+                            from,
+                            messages.map(|message| &message.text).cloned().collect(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn user(&self, user: u32) -> Option<&User> {
+        self.users.get(&user)
+    }
+
     pub fn push_channel(&mut self, channel: Channel) {
-        self.channels.push_front(channel);
+        self.channels.push_back(channel);
     }
 
     pub fn push_message(&mut self, channel: u32, message: Message) {
         if let Some(channel) = self.channels.get_mut(channel as usize) {
-            channel.messages.push_front(message);
+            channel.messages.push_back(message);
         }
     }
 }

@@ -2,7 +2,7 @@ mod state;
 mod view;
 
 use self::{
-    state::{Channel, State},
+    state::{Channel, Message, State},
     view::{App, Data, Event, Props},
 };
 use wasm_bindgen::prelude::*;
@@ -25,9 +25,57 @@ impl View {
 pub fn main() -> Result<(), JsValue> {
     use yew::Callback;
 
-    let mut state = State::default();
-    state.push_channel(Channel::new("Chatting", None));
-    state.push_channel(Channel::new("Coding", None));
+    let state = {
+        let mut state = State::default();
+
+        state.push_channel(Channel::new("Chatting", None));
+        state.push_channel(Channel::new("Coding", None));
+        state.push_channel(Channel::new("Games", None));
+
+        let test_messages = [
+            (0, "hi"),
+            (0, "lol"),
+            (1, "hello, sup?"),
+            (0, "ok"),
+            (0, "test"),
+            (1, "nice"),
+        ];
+
+        for (from, text) in test_messages {
+            state.push_message(
+                0,
+                Message {
+                    from,
+                    text: text.into(),
+                },
+            );
+        }
+
+        state.push_message(
+            1,
+            Message {
+                from: 0,
+                text: "how to create a new function?".into(),
+            },
+        );
+        state.push_message(
+            1,
+            Message {
+                from: 0,
+                text: "hm..".into(),
+            },
+        );
+
+        state.push_message(
+            2,
+            Message {
+                from: 0,
+                text: "I love games ❤️".into(),
+            },
+        );
+
+        state
+    };
 
     let root = gloo::utils::document()
         .get_element_by_id("root")
