@@ -1,10 +1,11 @@
+mod post;
 mod socket;
 mod state;
 mod view;
 
 use self::{
     socket::socket,
-    state::{Channel, State},
+    state::{Channel, Message, State},
     view::{App, Data, Event, Props},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -19,8 +20,8 @@ struct View {
 }
 
 impl View {
-    fn received(&self, from: String, text: String) {
-        self.app.send_message(Event::Received { from, text });
+    fn update(&self) {
+        self.app.send_message(Event::StateUpdated);
     }
 }
 
@@ -30,44 +31,60 @@ pub fn main() -> Result<(), JsValue> {
     use gloo::console::log;
     use yew::Callback;
 
-    let state = Rc::new(RefCell::new(State::default()));
     let (write, read) = socket("ws://127.0.0.1:4567");
-    read.register({
-        let state = Rc::clone(&state);
-        move |message| match message {
-            ServerMessage::Closed => log!("closed"),
-            ServerMessage::LoggedIn(_) => log!("logged in"),
-            ServerMessage::User(_) => log!("user"),
-            ServerMessage::Channel(chan) => state
-                .borrow_mut()
-                .push_channel(Channel::new(&chan.name, chan.icon.as_deref())),
-            ServerMessage::Said { .. } => log!("said"),
-        }
-    });
-
     write.request(ClientMessage::Login {
         name: "nano",
-        pass: "123",
+        pass: "nano",
     });
 
-    let root = gloo::utils::document()
-        .get_element_by_id("root")
-        .expect_throw("root");
+    let state = Rc::new(RefCell::new(State::default()));
 
-    let app = yew::start_app_with_props_in_element::<App>(
-        root,
-        Props {
-            data: Data {
-                state,
-                current_channel: 0,
-                me: 0,
+    let view = {
+        let root = gloo::utils::document()
+            .get_element_by_id("root")
+            .expect_throw("root");
+
+        let app = yew::start_app_with_props_in_element::<App>(
+            root,
+            Props {
+                data: Data {
+                    state: Rc::clone(&state),
+                    current_channel: 0,
+                    me: 0,
+                },
+                onaction: Callback::from(|_| todo!()),
             },
-            onaction: Callback::from(|_| todo!()),
-        },
-    );
+        );
 
-    let view = View { app };
-    view.received("nano".into(), "hi".into());
+        View { app }
+    };
+
+    read.register(move |message| match message {
+        ServerMessage::Closed => log!("closed"),
+        ServerMessage::LoggedIn(logged) => match logged {
+            Ok(id) => log!("logged", id),
+            Err(err) => log!("error", err.to_string()),
+        },
+        ServerMessage::User(_) => log!("user"),
+        ServerMessage::Channel(chan) => {
+            state
+                .borrow_mut()
+                .push_channel(Channel::new(&chan.name, chan.icon.as_deref()));
+
+            view.update();
+        }
+        ServerMessage::Said { from, chan, text } => {
+            state.borrow_mut().push_message(
+                chan,
+                Message {
+                    from,
+                    text: text.into(),
+                },
+            );
+
+            view.update();
+        }
+    });
 
     Ok(())
 }

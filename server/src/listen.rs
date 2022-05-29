@@ -5,7 +5,7 @@ use tokio::{
 };
 use websocket::tungstenite::{self as ws, Message};
 
-pub async fn listen(addr: &str, sender: Sender<Event>) -> ! {
+pub async fn listen(addr: String, sender: Sender<Event>) -> ! {
     let listener = TcpListener::bind(addr).await.expect("bind");
     let local_addr = listener.local_addr().expect("should have a local adders");
     println!("listening at {local_addr}");
@@ -64,7 +64,7 @@ async fn connect(stream: TcpStream, sender: Sender<Event>) -> Result<(), ws::Err
                             what: What::BytesReceived(bytes),
                         };
 
-                        let _ = sender.send(event);
+                        let _ = sender.send(event).await;
                     }
                     Message::Ping(bytes) => write.send(Message::Pong(bytes)).await?,
                     Message::Close(_) => return Ok(()),

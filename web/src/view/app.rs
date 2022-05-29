@@ -13,7 +13,7 @@ pub struct Data {
 }
 
 pub enum Event {
-    Received { from: String, text: String },
+    StateUpdated,
     ChannelSelected(u32),
 }
 
@@ -43,12 +43,11 @@ impl Component for App {
 
     fn update(&mut self, _: &Context<Self>, message: Self::Message) -> bool {
         match message {
-            Event::Received { .. } => false,
-            Event::ChannelSelected(index) => {
-                self.data.current_channel = index;
-                true
-            }
+            Event::StateUpdated => {}
+            Event::ChannelSelected(index) => self.data.current_channel = index,
         }
+
+        true
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

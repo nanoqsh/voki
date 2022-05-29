@@ -100,7 +100,7 @@ impl Default for User {
     }
 }
 
-#[derive(Clone, Default, PartialEq)]
+#[derive(Default, PartialEq)]
 pub struct State {
     channels: Vector<Channel>,
     users: HashMap<u32, User>,
@@ -141,9 +141,9 @@ impl State {
         self.channels.push_back(chan);
     }
 
-    pub fn push_message(&mut self, channel: u32, message: Message) {
-        if let Some(channel) = self.channels.get_mut(channel as usize) {
-            channel.messages.push_back(message);
+    pub fn push_message(&mut self, chan: u32, message: Message) {
+        if let Some(chan) = self.channels.get_mut(chan as usize) {
+            chan.messages.push_back(message);
         }
     }
 }

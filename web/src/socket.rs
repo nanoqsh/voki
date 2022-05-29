@@ -1,3 +1,4 @@
+use crate::post::{post, Receiver, Sender};
 use base::{abi, decode, encode};
 use futures::{SinkExt, StreamExt};
 use gloo::{
@@ -5,10 +6,7 @@ use gloo::{
     net::websocket::{futures::WebSocket, Message, WebSocketError},
     timers::future,
 };
-use std::{
-    sync::mpsc::{self, Receiver, Sender},
-    time::Duration,
-};
+use std::time::Duration;
 
 pub struct Write(Sender<Message>);
 
@@ -16,7 +14,7 @@ impl Write {
     pub fn request(&self, message: abi::ClientMessage) {
         let mut buf = Vec::with_capacity(64);
         encode(&message, &mut buf).expect("encode");
-        let _ = self.0.send(Message::Bytes(buf));
+        self.0.push(Message::Bytes(buf));
     }
 }
 
@@ -29,7 +27,7 @@ impl Read {
     {
         wasm_futures::spawn_local(async move {
             loop {
-                while let Ok(Message::Bytes(bytes)) = self.0.recv() {
+                while let Some(Message::Bytes(bytes)) = self.0.take() {
                     let message = decode(&bytes).expect("decode");
                     callback(message);
                 }
@@ -43,13 +41,13 @@ impl Read {
 pub fn socket(url: &str) -> (Write, Read) {
     let ws = WebSocket::open(url).expect("websocket opened");
     let (mut write, mut read) = ws.split();
-    let (write_sender, write_receiver) = mpsc::channel();
-    let (read_sender, read_receiver) = mpsc::channel();
+    let (write_sender, write_receiver) = post();
+    let (read_sender, read_receiver) = post();
 
     wasm_futures::spawn_local(async move {
         loop {
             for message in &write_receiver {
-                write.send(message).await.unwrap();
+                let _ = write.send(message).await;
             }
 
             future::sleep(Duration::from_millis(1)).await;
@@ -59,9 +57,7 @@ pub fn socket(url: &str) -> (Write, Read) {
     wasm_futures::spawn_local(async move {
         while let Some(res) = read.next().await {
             match res {
-                Ok(message) => {
-                    let _ = read_sender.send(message);
-                }
+                Ok(message) => read_sender.push(message),
                 Err(err) => match err {
                     WebSocketError::ConnectionError | WebSocketError::ConnectionClose(_) => break,
                     WebSocketError::MessageSendError(err) => {

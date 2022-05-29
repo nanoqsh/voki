@@ -32,7 +32,7 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn address(&self) -> &str {
-        &self.address.0
+    pub fn address(&self) -> String {
+        self.address.0.clone()
     }
 }

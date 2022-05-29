@@ -13,8 +13,7 @@ async fn main() {
     let args = Args::parse();
 
     let (sender, receiver) = mpsc::channel(16);
-    tokio::select! {
-        _ = listen(args.address(), sender) => {},
-        _ = manage(receiver) => {},
-    }
+    let listen = tokio::spawn(listen(args.address(), sender));
+    let manage = tokio::spawn(manage(receiver));
+    let _ = tokio::join!(listen, manage);
 }

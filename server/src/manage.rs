@@ -3,7 +3,7 @@ use base::{abi, decode, encode};
 use std::{
     collections::{hash_map::Entry, HashMap},
     net::SocketAddr,
-    rc::Rc,
+    sync::Arc,
 };
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -14,13 +14,22 @@ struct User {
     avatar: Option<String>,
 }
 
-#[derive(Default)]
 struct Users {
-    ids: HashMap<u32, Rc<User>>,
-    names: HashMap<(String, String), Rc<User>>,
+    ids: HashMap<u32, Arc<User>>,
+    names: HashMap<(String, String), Arc<User>>,
 }
 
 impl Users {
+    fn new() -> Self {
+        let mut users = Self {
+            ids: HashMap::default(),
+            names: HashMap::default(),
+        };
+
+        users.push_new("nano", "nano");
+        users
+    }
+
     fn push_new(&mut self, name: &str, pass: &str) -> Option<u32> {
         let name = name.to_owned();
         let pass = pass.to_owned();
@@ -29,12 +38,12 @@ impl Users {
         match self.names.entry((name.clone(), pass)) {
             Entry::Occupied(_) => None,
             Entry::Vacant(en) => {
-                let user = Rc::new(User {
+                let user = Arc::new(User {
                     id,
                     name,
                     avatar: None,
                 });
-                en.insert(Rc::clone(&user));
+                en.insert(Arc::clone(&user));
                 self.ids.insert(id, user);
                 Some(id)
             }
@@ -94,7 +103,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
         logged: Option<u32>,
     }
 
-    let mut users = Users::default();
+    let mut users = Users::new();
     let channels = Channels::new();
     let mut clients: HashMap<SocketAddr, Client> = HashMap::default();
 
@@ -140,8 +149,12 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
 
                             ServerMessage::LoggedIn(logged)
                         }
-                        ClientMessage::Say { text } => match client.logged {
-                            Some(id) => ServerMessage::Said { from: id, text },
+                        ClientMessage::Say { chan, text } => match client.logged {
+                            Some(id) => ServerMessage::Said {
+                                from: id,
+                                chan,
+                                text,
+                            },
                             None => ServerMessage::Closed,
                         },
                     },
@@ -152,7 +165,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                     }
                 };
 
-                let send_initial_data = matches!(message, ServerMessage::LoggedIn(_));
+                let send_initial_data = matches!(message, ServerMessage::LoggedIn(Ok(_)));
                 send(&client.sender, message).await;
 
                 if send_initial_data {
