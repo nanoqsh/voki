@@ -137,8 +137,8 @@ impl State {
         self.users.get(&user)
     }
 
-    pub fn push_channel(&mut self, channel: Channel) {
-        self.channels.push_back(channel);
+    pub fn push_channel(&mut self, chan: Channel) {
+        self.channels.push_back(chan);
     }
 
     pub fn push_message(&mut self, channel: u32, message: Message) {

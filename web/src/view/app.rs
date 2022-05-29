@@ -2,12 +2,12 @@ use crate::{
     state::State,
     view::{channels::Channels, chat::Chat},
 };
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use yew::prelude::*;
 
 #[derive(Clone, PartialEq)]
 pub struct Data {
-    pub state: State,
+    pub state: Rc<RefCell<State>>,
     pub current_channel: u32,
     pub me: u32,
 }

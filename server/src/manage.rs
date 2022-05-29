@@ -51,40 +51,51 @@ impl Users {
     }
 }
 
+#[derive(Clone)]
+struct Channel {
+    id: u32,
+    name: String,
+    icon: Option<String>,
+}
+
+struct Channels(Vec<Channel>);
+
+impl Channels {
+    fn new() -> Self {
+        Self(vec![
+            Channel {
+                id: 0,
+                name: "Chatting".into(),
+                icon: None,
+            },
+            Channel {
+                id: 1,
+                name: "Coding".into(),
+                icon: None,
+            },
+            Channel {
+                id: 2,
+                name: "Games".into(),
+                icon: None,
+            },
+        ])
+    }
+
+    fn iter(&self) -> impl Iterator<Item = Channel> + '_ {
+        self.0.iter().cloned()
+    }
+}
+
 pub async fn manage(mut receiver: Receiver<Event>) -> ! {
     use abi::*;
-
-    struct Channel {
-        name: String,
-        icon: Option<String>,
-    }
-
-    impl Channel {
-        fn channels() -> Vec<Self> {
-            vec![
-                Self {
-                    name: "Chatting".into(),
-                    icon: None,
-                },
-                Self {
-                    name: "Coding".into(),
-                    icon: None,
-                },
-                Self {
-                    name: "Games".into(),
-                    icon: None,
-                },
-            ]
-        }
-    }
 
     struct Client {
         sender: Sender<Vec<u8>>,
         logged: Option<u32>,
     }
 
-    let channels = Channel::channels();
     let mut users = Users::default();
+    let channels = Channels::new();
     let mut clients: HashMap<SocketAddr, Client> = HashMap::default();
 
     loop {
@@ -148,7 +159,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                     for user in users.iter() {
                         send(
                             &client.sender,
-                            ServerMessage::User(abi::User {
+                            ServerMessage::User(User {
                                 id: user.id,
                                 name: user.name,
                                 avatar: user.avatar,
@@ -157,13 +168,13 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                         .await;
                     }
 
-                    for (id, chan) in channels.iter().enumerate() {
+                    for chan in channels.iter() {
                         send(
                             &client.sender,
-                            ServerMessage::Channel(abi::Channel {
-                                id: id as u32,
-                                name: chan.name.clone(),
-                                icon: chan.icon.clone(),
+                            ServerMessage::Channel(Channel {
+                                id: chan.id,
+                                name: chan.name,
+                                icon: chan.icon,
                             }),
                         )
                         .await;

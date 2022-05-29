@@ -1,10 +1,13 @@
+mod socket;
 mod state;
 mod view;
 
 use self::{
-    state::{Channel, Message, State},
+    socket::socket,
+    state::{Channel, State},
     view::{App, Data, Event, Props},
 };
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 use yew::AppHandle;
 
@@ -23,59 +26,29 @@ impl View {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
+    use base::abi::{ClientMessage, ServerMessage};
+    use gloo::console::log;
     use yew::Callback;
 
-    let state = {
-        let mut state = State::default();
-
-        state.push_channel(Channel::new("Chatting", None));
-        state.push_channel(Channel::new("Coding", None));
-        state.push_channel(Channel::new("Games", None));
-
-        let test_messages = [
-            (0, "hi"),
-            (0, "lol"),
-            (1, "hello, sup?"),
-            (0, "ok"),
-            (0, "test"),
-            (1, "nice"),
-        ];
-
-        for (from, text) in test_messages {
-            state.push_message(
-                0,
-                Message {
-                    from,
-                    text: text.into(),
-                },
-            );
+    let state = Rc::new(RefCell::new(State::default()));
+    let (write, read) = socket("ws://127.0.0.1:4567");
+    read.register({
+        let state = Rc::clone(&state);
+        move |message| match message {
+            ServerMessage::Closed => log!("closed"),
+            ServerMessage::LoggedIn(_) => log!("logged in"),
+            ServerMessage::User(_) => log!("user"),
+            ServerMessage::Channel(chan) => state
+                .borrow_mut()
+                .push_channel(Channel::new(&chan.name, chan.icon.as_deref())),
+            ServerMessage::Said { .. } => log!("said"),
         }
+    });
 
-        state.push_message(
-            1,
-            Message {
-                from: 0,
-                text: "how to create a new function?".into(),
-            },
-        );
-        state.push_message(
-            1,
-            Message {
-                from: 0,
-                text: "hm..".into(),
-            },
-        );
-
-        state.push_message(
-            2,
-            Message {
-                from: 0,
-                text: "I love games ❤️".into(),
-            },
-        );
-
-        state
-    };
+    write.request(ClientMessage::Login {
+        name: "nano",
+        pass: "123",
+    });
 
     let root = gloo::utils::document()
         .get_element_by_id("root")
@@ -85,7 +58,7 @@ pub fn main() -> Result<(), JsValue> {
         root,
         Props {
             data: Data {
-                state: state.clone(),
+                state,
                 current_channel: 0,
                 me: 0,
             },

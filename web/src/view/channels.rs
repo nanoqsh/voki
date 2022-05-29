@@ -25,7 +25,7 @@ pub fn channels(props: &Props) -> Html {
         <div class="channels">
             <div>
             {
-                for zip(0.., data.state.channels()).map(|(index, chan)| {
+                for zip(0.., data.state.borrow().channels()).map(|(index, chan)| {
                     let class = classes![
                         "channel",
                         (data.current_channel == index).then(|| "current"),

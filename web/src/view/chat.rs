@@ -165,12 +165,13 @@ impl Component for Chat {
             .link()
             .callback(move |text| Event::Send { channel, text });
 
+        let state = data.state.borrow();
         html! {
             <div class="chat">
                 <div class="messages">
                     {
-                        for data.state.messages(data.current_channel).into_iter().map(|(from, messages)| {
-                            let user = data.state.user(from).cloned().unwrap_or_default();
+                        for state.messages(data.current_channel).into_iter().map(|(from, messages)| {
+                            let user = state.user(from).cloned().unwrap_or_default();
 
                             html! {
                                 <Message
