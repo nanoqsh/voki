@@ -5,7 +5,7 @@ struct Address(String);
 
 impl Default for Address {
     fn default() -> Self {
-        Self("127.0.0.1:4567".into())
+        Self("0.0.0.0:4567".into())
     }
 }
 
