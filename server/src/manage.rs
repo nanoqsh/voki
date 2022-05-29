@@ -5,7 +5,10 @@ use std::{
     net::SocketAddr,
     sync::Arc,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    oneshot::Sender as Close,
+};
 
 #[derive(Clone)]
 struct User {
@@ -55,6 +58,10 @@ impl Users {
         self.names.get(&key).map(|user| user.id)
     }
 
+    fn get_by_id(&self, id: u32) -> Option<&User> {
+        self.ids.get(&id).map(Arc::as_ref)
+    }
+
     fn iter(&self) -> impl Iterator<Item = User> + '_ {
         self.ids.values().map(|user| user.as_ref().clone())
     }
@@ -100,6 +107,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
 
     struct Client {
         sender: Sender<Vec<u8>>,
+        close: Option<Close<()>>,
         logged: Option<u32>,
     }
 
@@ -111,12 +119,13 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
         let event = receiver.recv().await.expect("channel is open");
 
         match event.what {
-            What::NewConnection(sender) => {
+            What::NewConnection { sender, close } => {
                 // Remove old client
                 let _ = clients.insert(
                     event.from,
                     Client {
                         sender,
+                        close: Some(close),
                         logged: None,
                     },
                 );
@@ -150,47 +159,51 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                             ServerMessage::LoggedIn(logged)
                         }
                         ClientMessage::Say { chan, text } => match client.logged {
-                            Some(id) => ServerMessage::Said {
-                                from: id,
-                                chan,
-                                text,
-                            },
+                            Some(id) => {
+                                let user = users.get_by_id(id).expect("user");
+                                let name = &user.name;
+                                println!("{name} ({chan}): {text}");
+
+                                ServerMessage::Said {
+                                    from: id,
+                                    chan,
+                                    text,
+                                }
+                            }
                             None => ServerMessage::Closed,
                         },
                     },
                     Err(err) => {
                         println!("{}: decode error {:?}", event.from, err);
-                        // TODO: Close connection
                         ServerMessage::Closed
                     }
                 };
 
+                if let ServerMessage::Closed = message {
+                    client.close.take().map(|close| close.send(()));
+                }
+
                 let send_initial_data = matches!(message, ServerMessage::LoggedIn(Ok(_)));
-                send(&client.sender, message).await;
+                let sender = &client.sender;
+                send(sender, message).await;
 
                 if send_initial_data {
                     for user in users.iter() {
-                        send(
-                            &client.sender,
-                            ServerMessage::User(User {
-                                id: user.id,
-                                name: user.name,
-                                avatar: user.avatar,
-                            }),
-                        )
-                        .await;
+                        let message = ServerMessage::User(User {
+                            id: user.id,
+                            name: user.name,
+                            avatar: user.avatar,
+                        });
+                        send(sender, message).await;
                     }
 
                     for chan in channels.iter() {
-                        send(
-                            &client.sender,
-                            ServerMessage::Channel(Channel {
-                                id: chan.id,
-                                name: chan.name,
-                                icon: chan.icon,
-                            }),
-                        )
-                        .await;
+                        let message = ServerMessage::Channel(Channel {
+                            id: chan.id,
+                            name: chan.name,
+                            icon: chan.icon,
+                        });
+                        send(sender, message).await;
                     }
                 }
             }

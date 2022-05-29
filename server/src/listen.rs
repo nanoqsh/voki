@@ -1,7 +1,10 @@
 use crate::event::*;
 use tokio::{
     net::{TcpListener, TcpStream},
-    sync::mpsc::{self, Sender},
+    sync::{
+        mpsc::{self, Sender},
+        oneshot,
+    },
 };
 use websocket::tungstenite::{self as ws, Message};
 
@@ -47,9 +50,13 @@ async fn connect(stream: TcpStream, sender: Sender<Event>) -> Result<(), ws::Err
     println!("new websocket client: {addr}");
 
     let (client_sender, mut receiver) = mpsc::channel(16);
+    let (close_sender, mut close_receiver) = oneshot::channel();
     let event = Event {
         from: addr,
-        what: What::NewConnection(client_sender),
+        what: What::NewConnection {
+            sender: client_sender,
+            close: close_sender,
+        },
     };
     let _ = sender.send(event).await;
 
@@ -72,6 +79,7 @@ async fn connect(stream: TcpStream, sender: Sender<Event>) -> Result<(), ws::Err
                 }
             }
             Some(bytes) = receiver.recv() => write.send(Message::Binary(bytes)).await?,
+            Ok(()) = &mut close_receiver => return Ok(()),
         }
     }
 }

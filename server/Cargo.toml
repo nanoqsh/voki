@@ -20,3 +20,7 @@ features = [
     "sync",
     "time",
 ]
+
+[profile.release]
+strip = "debuginfo"
+lto = true
