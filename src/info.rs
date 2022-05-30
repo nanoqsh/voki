@@ -1,5 +1,5 @@
 macro_rules! info {
-    ($l:expr, $e:expr) => {
+    ($l:expr, $e:expr) => {{
         use termion::{color, style};
 
         println!(
@@ -11,7 +11,7 @@ macro_rules! info {
             style::Reset,
             $e
         );
-    };
+    }};
 }
 
 pub(crate) use info;
