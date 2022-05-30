@@ -1,5 +1,5 @@
 use crate::event::*;
-use base::{abi, decode, encode};
+use base::{api, decode, encode};
 use std::{
     collections::{hash_map::Entry, HashMap},
     net::SocketAddr,
@@ -103,7 +103,7 @@ impl Channels {
 }
 
 pub async fn manage(mut receiver: Receiver<Event>) -> ! {
-    use abi::*;
+    use api::*;
 
     struct Client {
         sender: Sender<Vec<u8>>,
@@ -164,11 +164,17 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                                 let name = &user.name;
                                 println!("{name} ({chan}): {text}");
 
-                                ServerMessage::Said {
-                                    from: id,
-                                    chan,
-                                    text,
+                                // Send this to all
+                                for client in clients.values() {
+                                    let message = ServerMessage::Said {
+                                        from: id,
+                                        chan,
+                                        text,
+                                    };
+                                    send(&client.sender, message).await;
                                 }
+
+                                continue;
                             }
                             None => ServerMessage::Closed,
                         },
@@ -211,7 +217,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
     }
 }
 
-async fn send(sender: &Sender<Vec<u8>>, message: abi::ServerMessage<'_>) {
+async fn send(sender: &Sender<Vec<u8>>, message: api::ServerMessage<'_>) {
     let mut buf = Vec::with_capacity(64);
     encode(&message, &mut buf).expect("encode");
     let _ = sender.send(buf).await;

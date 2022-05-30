@@ -18,7 +18,7 @@ impl Channel {
     pub fn new(name: &str, icon: Option<&str>) -> Self {
         Self {
             name: name.into(),
-            icon: icon.map(|icon| icon.into()),
+            icon: icon.map(Into::into),
             messages: Vector::default(),
         }
     }
@@ -145,5 +145,9 @@ impl State {
         if let Some(chan) = self.channels.get_mut(chan as usize) {
             chan.messages.push_back(message);
         }
+    }
+
+    pub fn push_user(&mut self, id: u32, user: User) {
+        self.users.insert(id, user);
     }
 }

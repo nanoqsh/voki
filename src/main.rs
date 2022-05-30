@@ -1,7 +1,7 @@
 mod info;
 mod tools;
 
-use self::{info::info, tools::*};
+use self::{info::*, tools::*};
 use std::{env, process::Command};
 
 fn main() {
@@ -30,7 +30,7 @@ fn main() {
     for Dependency { name, tool } in deps {
         info!("Building", name);
 
-        Command::new(tool)
+        let status = Command::new(tool)
             .args(tool.args())
             .args(release.then(|| "--release"))
             .current_dir(name)
@@ -38,5 +38,10 @@ fn main() {
             .expect("build")
             .wait()
             .expect("wait");
+
+        if !status.success() {
+            error!("building failed");
+            break;
+        }
     }
 }

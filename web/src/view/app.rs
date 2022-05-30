@@ -18,7 +18,7 @@ pub enum Event {
 }
 
 pub enum Action {
-    Send { channel: u32, text: Rc<str> },
+    Send { chan: u32, text: Rc<str> },
 }
 
 #[derive(PartialEq, Properties)]
@@ -57,7 +57,7 @@ impl Component for App {
 
         let onsend = Callback::from({
             let onaction = ctx.props().onaction.clone();
-            move |(channel, text)| onaction.emit(Action::Send { channel, text })
+            move |(chan, text)| onaction.emit(Action::Send { chan, text })
         });
 
         html! {

@@ -3,5 +3,10 @@ name = "voki"
 version = "0.1.0"
 edition = "2021"
 
+[dev-dependencies]
+http = { path = "./http" }
+server = { path = "./server" }
+web = { path = "./web" }
+
 [dependencies]
 termion = "1.5"

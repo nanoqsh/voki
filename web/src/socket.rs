@@ -1,5 +1,5 @@
 use crate::post::{post, Receiver, Sender};
-use base::{abi, decode, encode};
+use base::{api, decode, encode};
 use futures::{SinkExt, StreamExt};
 use gloo::{
     console::error,
@@ -11,7 +11,7 @@ use std::time::Duration;
 pub struct Write(Sender<Message>);
 
 impl Write {
-    pub fn request(&self, message: abi::ClientMessage) {
+    pub fn request(&self, message: api::ClientMessage) {
         let mut buf = Vec::with_capacity(64);
         encode(&message, &mut buf).expect("encode");
         self.0.push(Message::Bytes(buf));
@@ -23,7 +23,7 @@ pub struct Read(Receiver<Message>);
 impl Read {
     pub fn register<F>(self, mut callback: F)
     where
-        F: FnMut(abi::ServerMessage) + 'static,
+        F: FnMut(api::ServerMessage) + 'static,
     {
         wasm_futures::spawn_local(async move {
             loop {

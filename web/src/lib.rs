@@ -5,8 +5,8 @@ mod view;
 
 use self::{
     socket::socket,
-    state::{Channel, Message, State},
-    view::{App, Data, Event, Props},
+    state::{Channel, Message, State, User},
+    view::{Action, App, Data, Event, Props},
 };
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
@@ -27,11 +27,11 @@ impl View {
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    use base::abi::{ClientMessage, ServerMessage};
+    use base::api::{ClientMessage, ServerMessage};
     use gloo::console::log;
     use yew::Callback;
 
-    let (write, read) = socket("ws://127.0.0.1:4567");
+    let (write, read) = socket("ws://0.0.0.0:4567");
     write.request(ClientMessage::Login {
         name: "nano",
         pass: "nano",
@@ -52,7 +52,11 @@ pub fn main() -> Result<(), JsValue> {
                     current_channel: 0,
                     me: 0,
                 },
-                onaction: Callback::from(|_| todo!()),
+                onaction: Callback::from(move |action| match action {
+                    Action::Send { chan, text } => {
+                        write.request(ClientMessage::Say { chan, text: &text })
+                    }
+                }),
             },
         );
 
@@ -65,7 +69,17 @@ pub fn main() -> Result<(), JsValue> {
             Ok(id) => log!("logged", id),
             Err(err) => log!("error", err.to_string()),
         },
-        ServerMessage::User(_) => log!("user"),
+        ServerMessage::User(user) => {
+            state.borrow_mut().push_user(
+                user.id,
+                User {
+                    name: user.name.into(),
+                    avatar: user.avatar.map(Into::into),
+                },
+            );
+
+            view.update();
+        }
         ServerMessage::Channel(chan) => {
             state
                 .borrow_mut()

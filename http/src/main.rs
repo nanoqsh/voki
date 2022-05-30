@@ -1,20 +1,5 @@
-use rocket::{
-    fs::FileServer,
-    get, launch, routes,
-    serde::{json::Json, Serialize},
-};
-
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct Message<'a> {
-    text: &'a str,
-}
-
-#[get("/")]
-fn index() -> Json<Message<'static>> {
-    let message = Message { text: "hello" };
-    message.into()
-}
+use http::index;
+use rocket::{fs::FileServer, launch, routes};
 
 #[launch]
 fn rocket() -> _ {
