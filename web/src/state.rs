@@ -1,4 +1,4 @@
-use im::{HashMap, Vector};
+use im::{HashMap, OrdMap, Vector};
 use std::{fmt, rc::Rc};
 
 #[derive(Clone, PartialEq)]
@@ -74,11 +74,9 @@ impl PartialEq for Channel {
                 return false;
             }
 
-            if lhs.is_inline() {
-                lhs == rhs
-            } else {
-                lhs.ptr_eq(rhs)
-            }
+            lhs.is_inline()
+                .then(|| lhs == rhs)
+                .unwrap_or_else(|| lhs.ptr_eq(rhs))
         }
 
         self.name == rhs.name && self.icon == rhs.icon && possibly_eq(&self.messages, &rhs.messages)
@@ -102,23 +100,22 @@ impl Default for User {
 
 #[derive(Default, PartialEq)]
 pub struct State {
-    channels: Vector<Channel>,
+    channels: OrdMap<u32, Channel>,
     users: HashMap<u32, User>,
 }
 
 impl State {
     pub fn channels(&self) -> impl Iterator<Item = &Channel> {
-        self.channels.iter()
+        self.channels.values()
     }
 
-    pub fn messages(&self, channel: u32) -> Vector<(u32, Vector<Rc<str>>)> {
+    pub fn messages(&self, chan: u32) -> Vector<(u32, Vector<Rc<str>>)> {
         use itertools::Itertools;
 
         self.channels
-            .get(channel as usize)
-            .map(|channel| {
-                channel
-                    .messages
+            .get(&chan)
+            .map(|chan| {
+                chan.messages
                     .iter()
                     .group_by(|message| message.from)
                     .into_iter()
@@ -137,12 +134,12 @@ impl State {
         self.users.get(&user)
     }
 
-    pub fn push_channel(&mut self, chan: Channel) {
-        self.channels.push_back(chan);
+    pub fn push_channel(&mut self, id: u32, chan: Channel) {
+        self.channels.insert(id, chan);
     }
 
     pub fn push_message(&mut self, chan: u32, message: Message) {
-        if let Some(chan) = self.channels.get_mut(chan as usize) {
+        if let Some(chan) = self.channels.get_mut(&chan) {
             chan.messages.push_back(message);
         }
     }

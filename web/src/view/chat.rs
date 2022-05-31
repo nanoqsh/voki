@@ -116,22 +116,16 @@ pub struct Props {
     pub onsend: Callback<(u32, Rc<str>)>,
 }
 
-pub struct Chat {
-    scroll_to_end: bool,
-}
+pub struct Chat;
 
 impl Chat {
     fn scroll_to_end(&mut self) {
-        if self.scroll_to_end {
-            let height = gloo::utils::document()
-                .body()
-                .expect_throw("body")
-                .scroll_height();
+        let height = gloo::utils::document()
+            .body()
+            .expect_throw("body")
+            .scroll_height();
 
-            gloo::utils::window().scroll_by_with_x_and_y(0., height as f64);
-
-            self.scroll_to_end = false;
-        }
+        gloo::utils::window().scroll_by_with_x_and_y(0., height as f64);
     }
 }
 
@@ -140,16 +134,13 @@ impl Component for Chat {
     type Properties = Props;
 
     fn create(_: &Context<Self>) -> Self {
-        Self {
-            scroll_to_end: true,
-        }
+        Self
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Event::Send { channel, text } if !text.trim().is_empty() => {
                 ctx.props().onsend.emit((channel, text));
-                self.scroll_to_end = true;
             }
             _ => {}
         }

@@ -1,31 +1,27 @@
 macro_rules! info {
-    ($l:expr, $e:expr) => {{
-        use termion::{color, style};
-
+    ($l:expr, $e:expr) => {
         println!(
             "{}{}{:>12}{}{} {}",
-            color::Fg(color::Blue),
-            style::Bold,
+            ::termion::color::Fg(::termion::color::Blue),
+            ::termion::style::Bold,
             $l,
-            color::Fg(color::Reset),
-            style::Reset,
+            ::termion::color::Fg(::termion::color::Reset),
+            ::termion::style::Reset,
             $e
         );
-    }};
+    };
 }
 
 pub(crate) use info;
 
 macro_rules! error {
     ($e:expr) => {
-        use termion::{color, style};
-
         println!(
             "{}{}error{}{}: {}",
-            color::Fg(color::Red),
-            style::Bold,
-            color::Fg(color::Reset),
-            style::Reset,
+            ::termion::color::Fg(::termion::color::Red),
+            ::termion::style::Bold,
+            ::termion::color::Fg(::termion::color::Reset),
+            ::termion::style::Reset,
             $e
         );
     };

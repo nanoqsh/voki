@@ -114,6 +114,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
     let mut users = Users::new();
     let channels = Channels::new();
     let mut clients: HashMap<SocketAddr, Client> = HashMap::default();
+    let mut history = vec![];
 
     loop {
         let event = receiver.recv().await.expect("channel is open");
@@ -164,16 +165,19 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                                 let name = &user.name;
                                 println!("{name} ({chan}): {text}");
 
-                                // Send this to all
+                                let message = Message {
+                                    from: id,
+                                    chan,
+                                    text: text.into(),
+                                };
+
+                                // Send this to all clients
                                 for client in clients.values() {
-                                    let message = ServerMessage::Said {
-                                        from: id,
-                                        chan,
-                                        text,
-                                    };
+                                    let message = ServerMessage::Message(message.clone());
                                     send(&client.sender, message).await;
                                 }
 
+                                history.push(message);
                                 continue;
                             }
                             None => ServerMessage::Closed,
@@ -208,6 +212,11 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                             id: chan.id,
                             name: chan.name,
                             icon: chan.icon,
+                            history: history
+                                .iter()
+                                .filter(|message| message.chan == chan.id)
+                                .cloned()
+                                .collect(),
                         });
                         send(sender, message).await;
                     }
@@ -217,7 +226,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
     }
 }
 
-async fn send(sender: &Sender<Vec<u8>>, message: api::ServerMessage<'_>) {
+async fn send(sender: &Sender<Vec<u8>>, message: api::ServerMessage) {
     let mut buf = Vec::with_capacity(64);
     encode(&message, &mut buf).expect("encode");
     let _ = sender.send(buf).await;

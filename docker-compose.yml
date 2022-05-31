@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  voki:
+    build: ./dock
+    container_name: voki
+    ports:
+      - 80:80
+      - 4567:4567

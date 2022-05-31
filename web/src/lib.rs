@@ -81,18 +81,28 @@ pub fn main() -> Result<(), JsValue> {
             view.update();
         }
         ServerMessage::Channel(chan) => {
-            state
-                .borrow_mut()
-                .push_channel(Channel::new(&chan.name, chan.icon.as_deref()));
+            {
+                let mut state = state.borrow_mut();
+                state.push_channel(chan.id, Channel::new(&chan.name, chan.icon.as_deref()));
+                for message in chan.history {
+                    state.push_message(
+                        message.chan,
+                        Message {
+                            from: message.from,
+                            text: message.text.into(),
+                        },
+                    );
+                }
+            }
 
             view.update();
         }
-        ServerMessage::Said { from, chan, text } => {
+        ServerMessage::Message(message) => {
             state.borrow_mut().push_message(
-                chan,
+                message.chan,
                 Message {
-                    from,
-                    text: text.into(),
+                    from: message.from,
+                    text: message.text.into(),
                 },
             );
 

@@ -37,13 +37,21 @@ pub struct Channel {
     pub id: u32,
     pub name: String,
     pub icon: Option<String>,
+    pub history: Vec<Message>,
 }
 
-#[derive(BorrowDecode, Encode)]
-pub enum ServerMessage<'a> {
+#[derive(Clone, Decode, Encode)]
+pub struct Message {
+    pub from: u32,
+    pub chan: u32,
+    pub text: String,
+}
+
+#[derive(Decode, Encode)]
+pub enum ServerMessage {
     Closed,
     LoggedIn(Result<u32, LoginError>),
     User(User),
     Channel(Channel),
-    Said { from: u32, chan: u32, text: &'a str },
+    Message(Message),
 }
