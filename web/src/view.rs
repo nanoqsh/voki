@@ -1,6 +1,7 @@
 mod app;
 mod channels;
 mod chat;
+mod login;
 mod raw;
 mod svg;
 

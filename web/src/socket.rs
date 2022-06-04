@@ -8,6 +8,7 @@ use gloo::{
 };
 use std::time::Duration;
 
+#[derive(Clone)]
 pub struct Write(Sender<Message>);
 
 impl Write {

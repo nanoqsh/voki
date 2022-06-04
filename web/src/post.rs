@@ -4,6 +4,7 @@ struct Inner<T> {
     queue: RefCell<VecDeque<T>>,
 }
 
+#[derive(Clone)]
 pub struct Sender<T> {
     inner: Rc<Inner<T>>,
 }

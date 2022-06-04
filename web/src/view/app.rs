@@ -1,6 +1,6 @@
 use crate::{
     state::State,
-    view::{channels::Channels, chat::Chat},
+    view::{channels::Channels, chat::Chat, login::Login},
 };
 use std::{cell::RefCell, rc::Rc};
 use yew::prelude::*;
@@ -9,7 +9,6 @@ use yew::prelude::*;
 pub struct Data {
     pub state: Rc<RefCell<State>>,
     pub current_channel: u32,
-    pub me: u32,
 }
 
 pub enum Event {
@@ -25,6 +24,7 @@ pub enum Action {
 pub struct Props {
     pub data: Data,
     pub onaction: Callback<Action>,
+    pub onlogin: Callback<(String, String)>,
 }
 
 pub struct App {
@@ -52,6 +52,10 @@ impl Component for App {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let context = self.data.clone();
+        let retry = context.state.borrow().retry;
+        let login = context.state.borrow().login();
+
+        let onlogin = ctx.props().onlogin.clone();
 
         let onselect = ctx.link().callback(Event::ChannelSelected);
 
@@ -61,12 +65,21 @@ impl Component for App {
         });
 
         html! {
-            <div class="app">
-                <ContextProvider<Data> { context }>
-                    <Channels { onselect } />
-                    <Chat { onsend } />
-                </ContextProvider<Data>>
-            </div>
+            <ContextProvider<Data> { context }>
+                {
+                    match login {
+                        Some(_) => html! {
+                            <div class="app">
+                                <Channels { onselect } />
+                                <Chat { onsend } />
+                            </div>
+                        },
+                        None => html! {
+                            <Login { retry } { onlogin } />
+                        },
+                    }
+                }
+            </ContextProvider<Data>>
         }
     }
 }

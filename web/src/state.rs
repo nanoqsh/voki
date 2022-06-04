@@ -102,9 +102,19 @@ impl Default for User {
 pub struct State {
     channels: OrdMap<u32, Channel>,
     users: HashMap<u32, User>,
+    pub retry: bool,
+    login: Option<u32>,
 }
 
 impl State {
+    pub fn login(&self) -> Option<u32> {
+        self.login
+    }
+
+    pub fn set_login(&mut self, id: u32) {
+        self.login = Some(id);
+    }
+
     pub fn channels(&self) -> impl Iterator<Item = &Channel> {
         self.channels.values()
     }

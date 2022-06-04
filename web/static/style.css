@@ -5,6 +5,7 @@
     --dark: #120c0f;
     --light: #f7eee9;
     --light1: #c5b3a9;
+    --red: #cc3e34;
     --message: #614c51;
     --message_hover: #785b5f;
 
@@ -51,6 +52,56 @@ textarea {
     margin: 0 auto;
     display: flex;
     flex-direction: row;
+}
+
+.login {
+    position: relative;
+    top: 100px;
+    width: 380px;
+    margin: auto;
+    padding: var(--pad_half) var(--pad);
+    border-radius: var(--br);
+    background: var(--bg0);
+}
+
+.login .note {
+    color: var(--red);
+}
+
+.login p {
+    margin: var(--pad_half) 0;
+}
+
+.login input {
+    width: calc(380px - 2 * var(--pad));
+    margin: var(--pad_half) 0;
+    padding: var(--pad);
+    border: none;
+    border-radius: var(--br);
+    background: var(--message);
+    user-select: text;
+}
+
+.login input:focus {
+    outline: none;
+}
+
+.login .retry {
+    border: 2px solid var(--red);
+}
+
+.login .button {
+    width: fit-content;
+    height: fit-content;
+    margin: var(--pad) 0;
+    padding: var(--pad);
+    border-radius: var(--br);
+    background: var(--message);
+    font-weight: bold;
+}
+
+.login .button:hover {
+    background: var(--message_hover);
 }
 
 .channels {

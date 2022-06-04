@@ -32,13 +32,8 @@ pub fn main() -> Result<(), JsValue> {
     use yew::Callback;
 
     let (write, read) = socket("ws://0.0.0.0:4567");
-    write.request(ClientMessage::Login {
-        name: "nano",
-        pass: "nano",
-    });
 
     let state = Rc::new(RefCell::new(State::default()));
-
     let view = {
         let root = gloo::utils::document()
             .get_element_by_id("root")
@@ -50,11 +45,21 @@ pub fn main() -> Result<(), JsValue> {
                 data: Data {
                     state: Rc::clone(&state),
                     current_channel: 0,
-                    me: 0,
                 },
-                onaction: Callback::from(move |action| match action {
-                    Action::Send { chan, text } => {
-                        write.request(ClientMessage::Say { chan, text: &text })
+                onaction: Callback::from({
+                    let write = write.clone();
+                    move |action| match action {
+                        Action::Send { chan, text } => {
+                            write.request(ClientMessage::Say { chan, text: &text })
+                        }
+                    }
+                }),
+                onlogin: Callback::from(move |(name, pass): (String, String)| {
+                    if !name.is_empty() && !pass.is_empty() {
+                        write.request(ClientMessage::Login {
+                            name: &name,
+                            pass: &pass,
+                        })
                     }
                 }),
             },
@@ -66,8 +71,15 @@ pub fn main() -> Result<(), JsValue> {
     read.register(move |message| match message {
         ServerMessage::Closed => log!("closed"),
         ServerMessage::LoggedIn(logged) => match logged {
-            Ok(id) => log!("logged", id),
-            Err(err) => log!("error", err.to_string()),
+            Ok(id) => {
+                state.borrow_mut().set_login(id);
+                view.update();
+            }
+            Err(err) => {
+                log!("error", err.to_string());
+                state.borrow_mut().retry = true;
+                view.update();
+            }
         },
         ServerMessage::User(user) => {
             state.borrow_mut().push_user(
