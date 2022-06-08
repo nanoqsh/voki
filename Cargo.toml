@@ -7,6 +7,3 @@ edition = "2021"
 http = { path = "./http" }
 server = { path = "./server" }
 web = { path = "./web" }
-
-[dependencies]
-termion = "1.5"

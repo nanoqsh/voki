@@ -1,9 +1,10 @@
-mod info;
 mod tools;
 
-use self::{info::*, tools::*};
+use self::tools::*;
 use std::{
-    env, fs, io,
+    env,
+    env::consts::EXE_SUFFIX,
+    fs, io,
     path::Path,
     process::{Command, ExitCode},
 };
@@ -97,7 +98,7 @@ fn main() -> ExitCode {
     ];
 
     for Dependency { name, tool } in deps {
-        info!("Building", name);
+        println!("Building: {}", name);
 
         let status = Command::new(tool)
             .args(tool.args())
@@ -109,14 +110,14 @@ fn main() -> ExitCode {
             .expect("wait");
 
         if !status.success() {
-            error!("building failed");
+            eprintln!("error: building failed");
             return ExitCode::FAILURE;
         }
     }
 
     let sub = release.then(|| "release").unwrap_or("debug");
-    let server_target_dir = format!("./server/target/{sub}/server");
-    let http_target_dir = format!("./http/target/{sub}/http");
+    let server_target_dir = format!("./server/target/{sub}/server{EXE_SUFFIX}");
+    let http_target_dir = format!("./http/target/{sub}/http{EXE_SUFFIX}");
     let dirs = [
         ("./web/static", "./dock/voki/static"),
         ("./web/pkg", "./dock/voki/static/pkg"),
@@ -126,15 +127,14 @@ fn main() -> ExitCode {
     ];
 
     for (from, to) in dirs {
-        info!("Update", to);
+        println!("Update: {}", to);
 
         if let Err(err) = update(from, to) {
-            let message = format!("{err:?}");
-            error!(message);
+            eprintln!("error: {err:?}");
             return ExitCode::FAILURE;
         }
     }
 
-    info!("Done", "Docker container is ready at ./dock");
+    println!("Done: Docker container is ready at ./dock");
     ExitCode::SUCCESS
 }
