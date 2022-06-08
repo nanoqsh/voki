@@ -1,5 +1,6 @@
 use crate::event::*;
 use base::{api, decode, encode};
+use rand::Rng;
 use std::{
     collections::{hash_map::Entry, HashMap},
     net::SocketAddr,
@@ -167,7 +168,29 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                                 let message = Message {
                                     from: id,
                                     chan,
-                                    text: text.into(),
+                                    content: MessageType::Text(text.into()),
+                                };
+
+                                // Send this to all clients
+                                for client in clients.values() {
+                                    let message = ServerMessage::Message(message.clone());
+                                    send(&client.sender, message).await;
+                                }
+
+                                history.push(message);
+                                continue;
+                            }
+                            None => ServerMessage::Closed,
+                        },
+                        ClientMessage::File { chan, ext, bytes } => match client.logged {
+                            Some(id) => {
+                                let saved = save_file(ext, bytes);
+                                println!("saved file {}", saved);
+
+                                let message = Message {
+                                    from: id,
+                                    chan,
+                                    content: MessageType::File(saved),
                                 };
 
                                 // Send this to all clients
@@ -229,4 +252,32 @@ async fn send(sender: &Sender<Vec<u8>>, message: api::ServerMessage) {
     let mut buf = Vec::with_capacity(64);
     encode(&message, &mut buf).expect("encode");
     let _ = sender.send(buf).await;
+}
+
+fn save_file(ext: &str, bytes: &[u8]) -> String {
+    use std::{fs::File, io::Write, path::PathBuf};
+
+    let mut rng = rand::thread_rng();
+    let name = {
+        let mut name: String = (0..20)
+            .map(|_| match rng.gen_range(0..=2) {
+                0 => rng.gen_range('a'..='z'),
+                1 => rng.gen_range('A'..='Z'),
+                2 => rng.gen_range('0'..='9'),
+                _ => unreachable!(),
+            })
+            .collect();
+
+        name.push('.');
+        name.push_str(ext);
+        name
+    };
+
+    let mut path = PathBuf::from("./static/images");
+    path.push(&name);
+    let mut file = File::create(&path).expect("create file");
+    file.write_all(bytes).expect("write");
+    file.flush().expect("flush");
+
+    name
 }

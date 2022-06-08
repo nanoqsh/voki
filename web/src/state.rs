@@ -1,10 +1,26 @@
+use base::api::MessageType;
 use im::{HashMap, OrdMap, Vector};
 use std::{fmt, rc::Rc};
 
 #[derive(Clone, PartialEq)]
+pub enum MessageContent {
+    Text(Rc<str>),
+    File(Rc<str>),
+}
+
+impl From<MessageType> for MessageContent {
+    fn from(message: MessageType) -> Self {
+        match message {
+            MessageType::Text(text) => MessageContent::Text(text.into()),
+            MessageType::File(file) => MessageContent::File(file.into()),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub struct Message {
     pub from: u32,
-    pub text: Rc<str>,
+    pub content: MessageContent,
 }
 
 #[derive(Clone)]
@@ -34,7 +50,10 @@ impl Channel {
     pub fn last_message(&self) -> LastMessage {
         self.messages
             .last()
-            .map(|message| message.text.as_ref())
+            .map(|message| match &message.content {
+                MessageContent::Text(text) => text.as_ref(),
+                MessageContent::File(_) => "..",
+            })
             .unwrap_or_default()
             .into()
     }
@@ -119,7 +138,7 @@ impl State {
         self.channels.values()
     }
 
-    pub fn messages(&self, chan: u32) -> Vector<(u32, Vector<Rc<str>>)> {
+    pub fn messages(&self, chan: u32) -> Vector<(u32, Vector<MessageContent>)> {
         use itertools::Itertools;
 
         self.channels
@@ -132,7 +151,7 @@ impl State {
                     .map(|(from, messages)| {
                         (
                             from,
-                            messages.map(|message| &message.text).cloned().collect(),
+                            messages.map(|message| &message.content).cloned().collect(),
                         )
                     })
                     .collect()

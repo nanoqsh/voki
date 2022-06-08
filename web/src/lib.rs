@@ -59,6 +59,11 @@ pub fn main() -> Result<(), JsValue> {
                         Action::Send { chan, text } => {
                             write.request(ClientMessage::Say { chan, text: &text })
                         }
+                        Action::File { chan, ext, bytes } => write.request(ClientMessage::File {
+                            chan,
+                            ext: &ext,
+                            bytes: &bytes,
+                        }),
                     }
                 }),
                 onlogin: Callback::from(move |(name, pass): (String, String)| {
@@ -108,7 +113,7 @@ pub fn main() -> Result<(), JsValue> {
                         message.chan,
                         Message {
                             from: message.from,
-                            text: message.text.into(),
+                            content: message.content.into(),
                         },
                     );
                 }
@@ -121,7 +126,7 @@ pub fn main() -> Result<(), JsValue> {
                 message.chan,
                 Message {
                     from: message.from,
-                    text: message.text.into(),
+                    content: message.content.into(),
                 },
             );
 

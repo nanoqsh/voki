@@ -42,23 +42,23 @@ pub fn login(props: &Props) -> Html {
     html! {
         <div class="login">
             if props.retry {
-                <p class="note">{ "Wrong name or password" }</p>
+                <p class="note">{ "Неверный логин или пароль" }</p>
             }
-            <p>{ "Name" }</p>
+            <p>{ "Логин" }</p>
             <input
                 class={ class.clone() }
                 type="text"
                 ref={ name_node }
                 onkeypress={ onkeypress.clone() }
             />
-            <p>{ "Password" }</p>
+            <p>{ "Пароль" }</p>
             <input
                 { class }
                 type="text"
                 ref={ pass_node }
                 { onkeypress }
             />
-            <div class="button" { onclick }>{ "Login" }</div>
+            <div class="button" { onclick }>{ "Войти" }</div>
         </div>
     }
 }

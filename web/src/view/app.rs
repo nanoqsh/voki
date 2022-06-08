@@ -17,7 +17,15 @@ pub enum Event {
 }
 
 pub enum Action {
-    Send { chan: u32, text: Rc<str> },
+    Send {
+        chan: u32,
+        text: Rc<str>,
+    },
+    File {
+        chan: u32,
+        ext: String,
+        bytes: Vec<u8>,
+    },
 }
 
 #[derive(PartialEq, Properties)]
@@ -64,6 +72,11 @@ impl Component for App {
             move |(chan, text)| onaction.emit(Action::Send { chan, text })
         });
 
+        let onfile = Callback::from({
+            let onaction = ctx.props().onaction.clone();
+            move |(chan, ext, bytes)| onaction.emit(Action::File { chan, ext, bytes })
+        });
+
         html! {
             <ContextProvider<Data> { context }>
                 {
@@ -71,7 +84,7 @@ impl Component for App {
                         Some(_) => html! {
                             <div class="app">
                                 <Channels { onselect } />
-                                <Chat { onsend } />
+                                <Chat { onsend } { onfile } />
                             </div>
                         },
                         None => html! {

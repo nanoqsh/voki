@@ -16,7 +16,7 @@ wasm-bindgen = "0.2"
 wasm_futures = { package = "wasm-bindgen-futures", version = "0.4" }
 wee_alloc = "0.4"
 yew = "0.19"
-futures = "0.3.21"
+futures = "0.3"
 
 [dependencies.web-sys]
 version = "0.3"

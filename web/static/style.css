@@ -172,7 +172,7 @@ textarea {
 }
 
 .message .rows {
-    width: 100%;
+    max-width: 600px;
     overflow: hidden;
     border-radius: var(--br);
     border-top-left-radius: 0;
@@ -188,6 +188,10 @@ textarea {
 
 .message .rows .text:hover {
     background: var(--message_hover);
+}
+
+.message .rows img {
+    max-width: 600px;
 }
 
 .pad {

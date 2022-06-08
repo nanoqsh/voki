@@ -3,9 +3,23 @@ use std::fmt;
 
 #[derive(BorrowDecode, Encode)]
 pub enum ClientMessage<'a> {
-    SignUp { name: &'a str, pass: &'a str },
-    Login { name: &'a str, pass: &'a str },
-    Say { chan: u32, text: &'a str },
+    SignUp {
+        name: &'a str,
+        pass: &'a str,
+    },
+    Login {
+        name: &'a str,
+        pass: &'a str,
+    },
+    Say {
+        chan: u32,
+        text: &'a str,
+    },
+    File {
+        chan: u32,
+        ext: &'a str,
+        bytes: &'a [u8],
+    },
 }
 
 #[derive(Decode, Encode)]
@@ -41,10 +55,16 @@ pub struct Channel {
 }
 
 #[derive(Clone, Decode, Encode)]
+pub enum MessageType {
+    Text(String),
+    File(String),
+}
+
+#[derive(Clone, Decode, Encode)]
 pub struct Message {
     pub from: u32,
     pub chan: u32,
-    pub text: String,
+    pub content: MessageType,
 }
 
 #[derive(Decode, Encode)]
