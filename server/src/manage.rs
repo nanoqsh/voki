@@ -132,8 +132,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                 );
             }
             What::CloseConnection => {
-                let old = clients.remove(&event.from);
-                assert!(old.is_some());
+                let _ = clients.remove(&event.from);
             }
             What::BytesReceived(bytes) => {
                 let client = clients.get_mut(&event.from).expect("client");

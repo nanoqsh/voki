@@ -10,7 +10,7 @@ use self::{
 };
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
-use yew::AppHandle;
+use yew::{AppHandle, Callback};
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -28,16 +28,23 @@ impl View {
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     use base::api::{ClientMessage, ServerMessage};
-    use gloo::console::log;
-    use yew::Callback;
+    use gloo::{console::log, utils::document};
 
-    let (write, read) = socket("ws://0.0.0.0:4567");
+    let (write, read) = {
+        let host = document()
+            .location()
+            .expect_throw("location")
+            .host()
+            .expect_throw("host");
+
+        let url = format!("ws://{}:4567", host);
+        log!("url", &url);
+        socket(&url)
+    };
 
     let state = Rc::new(RefCell::new(State::default()));
     let view = {
-        let root = gloo::utils::document()
-            .get_element_by_id("root")
-            .expect_throw("root");
+        let root = document().get_element_by_id("root").expect_throw("root");
 
         let app = yew::start_app_with_props_in_element::<App>(
             root,
