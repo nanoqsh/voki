@@ -24,6 +24,8 @@
     color: var(--light);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 12pt;
+    -webkit-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
 
@@ -43,6 +45,8 @@ textarea {
     border: none;
     outline: none;
     resize: none;
+    -webkit-user-select: text;
+    -ms-user-select: text;
     user-select: text;
 }
 
@@ -79,6 +83,8 @@ textarea {
     border: none;
     border-radius: var(--br);
     background: var(--message);
+    -webkit-user-select: text;
+    -ms-user-select: text;
     user-select: text;
 }
 
