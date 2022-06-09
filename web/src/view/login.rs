@@ -19,8 +19,6 @@ pub fn login(props: &Props) -> Html {
             let name: web_sys::HtmlInputElement = name_node.cast().expect_throw("cast");
             let pass: web_sys::HtmlInputElement = pass_node.cast().expect_throw("cast");
             onlogin.emit((name.value().trim().into(), pass.value().trim().into()));
-            name.set_value("");
-            pass.set_value("");
         }
     };
 

@@ -30,11 +30,16 @@ impl Users {
             names: HashMap::default(),
         };
 
-        users.push_new("nano", "nano");
+        users.push_new("admin", "admin", None);
+        users.push_new("test0", "test0", Some("./images/test0.jpg"));
+        users.push_new("test1", "test1", Some("./images/test1.jpg"));
+        users.push_new("test2", "test2", Some("./images/test2.jpg"));
+        users.push_new("test3", "test3", Some("./images/test3.jpg"));
+        users.push_new("test4", "test4", Some("./images/test4.jpg"));
         users
     }
 
-    fn push_new(&mut self, name: &str, pass: &str) -> Option<u32> {
+    fn push_new(&mut self, name: &str, pass: &str, avatar: Option<&str>) -> Option<u32> {
         let name = name.to_owned();
         let pass = pass.to_owned();
         let id = self.ids.len() as u32;
@@ -45,7 +50,7 @@ impl Users {
                 let user = Arc::new(User {
                     id,
                     name,
-                    avatar: None,
+                    avatar: avatar.map(Into::into),
                 });
                 en.insert(Arc::clone(&user));
                 self.ids.insert(id, user);
@@ -82,18 +87,23 @@ impl Channels {
         Self(vec![
             Channel {
                 id: 0,
-                name: "Chatting".into(),
-                icon: None,
+                name: "Общение".into(),
+                icon: Some("./images/chatting.png".into()),
             },
             Channel {
                 id: 1,
-                name: "Coding".into(),
-                icon: None,
+                name: "Разработка".into(),
+                icon: Some("./images/development.png".into()),
             },
             Channel {
                 id: 2,
-                name: "Games".into(),
-                icon: None,
+                name: "Программирование".into(),
+                icon: Some("./images/code.png".into()),
+            },
+            Channel {
+                id: 3,
+                name: "Игры".into(),
+                icon: Some("./images/games.png".into()),
             },
         ])
     }
@@ -142,7 +152,7 @@ pub async fn manage(mut receiver: Receiver<Event>) -> ! {
                     Ok(message) => match message {
                         ClientMessage::SignUp { name, pass } => ServerMessage::LoggedIn(
                             users
-                                .push_new(name, pass)
+                                .push_new(name, pass, None)
                                 .ok_or(LoginError::NameAlreadyExists),
                         ),
                         ClientMessage::Login { name, pass } => {
