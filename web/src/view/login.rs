@@ -52,7 +52,7 @@ pub fn login(props: &Props) -> Html {
             <p>{ "Пароль" }</p>
             <input
                 { class }
-                type="text"
+                type="password"
                 ref={ pass_node }
                 { onkeypress }
             />
